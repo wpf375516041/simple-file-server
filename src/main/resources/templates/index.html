@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">默认的title</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 6px 12px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        form button {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 10px 32px;
+            margin-left: 50px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #45a049;
+        }
+
+        /* 添加一个新的样式规则 */
+        .table-container {
+            height: calc(100vh - 205px);
+            /* 你可以根据需要调整这个值 */
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            /* Center text in cells */
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #file-name {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 6px 12px;
+            background-color: #f2f2f2;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="hidden" id="directory" th:value="${directory}" />
+    <h1 th:text="'Directory listing for ' + ${directory}"></h1>
+
+    <hr> <!-- 分隔线 -->
+
+    <form method="POST" action="/upload" enctype="multipart/form-data" th:object="${uploadForm}">
+        <label for="file-upload" class="custom-file-upload">
+            选择文件
+        </label>
+        <input id="file-upload" type="file" name="files" multiple style="display: none;">
+        <span id="file-name">请选择要上传的文件……</span> <!-- Element to display the file name -->
+        <div style="display: inline-block;">
+            <button type="submit">上传</button>
+            <!-- Add a button that links to the home page -->
+            <a href="/" style="margin-left: 10px;">
+                <button  type="button">返回主页</button>
+            </a>
+        </div>
+    </form>
+
+    <hr> <!-- 分隔线 -->
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>文件名</th>
+                    <th>文件大小</th>
+                    <th>最后修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="fileInfo:${fileInfos}">
+                    <td>
+                        <a th:if="${fileInfo.isFile}"
+                            th:href="@{/download/?filename={filename}(filename=${fileInfo.absolutePath})}"
+                            th:text="${fileInfo.name}"></a>
+                        <a th:unless="${fileInfo.isFile}" th:href="@{/?path={path}(path=${fileInfo.absolutePath})}"
+                            th:text="${fileInfo.name}"></a>
+                    </td>
+                    <td th:text="${fileInfo.size}"></td>
+                    <td th:text="${#dates.format(fileInfo.lastModified, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Overlay -->
+    <div id="overlay"
+        style="display: none; position: fixed; width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 2; cursor: pointer;">
+        <h2
+            style="position: absolute; top: 40%; left: 50%; font-size: 40px; color: #4CAF50; transform: translate(-50%,-50%);">
+            正在上传...</h2>
+        <div id="progress-container"
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 50%; background-color: #f2f2f2; border-radius: 25px; padding: 3px;">
+            <div class="progress-bar" style="width: 100%; height: 20px; border-radius: 20px; background-color: #ddd;">
+                <div class="progress-bar-fill"
+                    style="background-color: #4CAF50; width: 0%; height: 100%; display: block; border-radius: 20px;">
+                </div>
+            </div>
+            <span id="progress-text"
+                style="position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%); color: #4CAF50; font-size: 25px;">0%</span>
+        </div>
+    </div>
+</body>
+
+<script th:inline="javascript">
+    document.getElementById('file-upload').addEventListener('change', function (e) {
+        // Get the selected file name
+        var fileName = e.target.files[0].name;
+
+        // Update the file name element
+        document.getElementById('file-name').textContent = fileName;
+    });
+
+    var form = document.querySelector('form');
+    var overlay = document.getElementById('overlay');
+    var progressBar = document.querySelector('.progress-bar');
+
+    var uploadProgressInterval;
+
+    // Set isUploading to true
+    var isUploading = false;
+
+    window.onbeforeunload = function () {
+        if (isUploading) {
+            return '文件正在上传，如果你离开或刷新页面，上传将会被取消。你确定要离开吗？';
+        }
+    };
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Show the overlay
+        overlay.style.display = 'block';
+
+        // Create a new FormData object
+        var formData = new FormData(form);
+        var uuid = generateUUID();
+        formData.append("uuid", uuid);
+        var directory = document.getElementById('directory').value;
+        formData.append("path", directory);
+
+        // Create a new XMLHttpRequest object for file upload
+        var xhr = new XMLHttpRequest();
+
+        // Configure the request
+        xhr.open('POST', '/upload', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        // Handle the load event
+        xhr.addEventListener('load', function (e) {
+            if (xhr.status == 200) {
+                // If the upload was successful, wait for the progress to reach 100 before redirecting
+                waitForProgressCompletion();
+                isUploading = false;
+            } else {
+                // If the upload failed, display an error message
+                alert('Upload failed: ' + xhr.statusText);
+                clearInterval(uploadProgressInterval);
+                overlay.style.display = 'none';
+                isUploading = false;
+            }
+        });
+
+        // Send the request
+        xhr.send(formData);
+        isUploading = true;
+
+        // Start the interval to get the upload progress
+        uploadProgressInterval = setInterval(function () {
+            // Create a new XMLHttpRequest object for progress query
+            var progressXhr = new XMLHttpRequest();
+
+            // Set the withCredentials flag to true to send session cookies
+            progressXhr.withCredentials = true;
+
+            // Configure the request
+            progressXhr.open('GET', '/upload-progress/' + uuid, true);
+
+            // Handle the load event
+            progressXhr.addEventListener('load', function (e) {
+                if (progressXhr.status == 200) {
+                    // Update the progress bar
+
+                    var progress = JSON.parse(progressXhr.responseText);
+
+                    // Change the color of the text when the progress reaches 50%
+                    if (progress >= 50) {
+                        document.getElementById('progress-text').style.color = '#fff';
+                    } else {
+                        document.getElementById('progress-text').style.color = '#4CAF50';
+                    }
+
+                    progressBar.value = JSON.parse(progressXhr.responseText);
+                    document.querySelector('.progress-bar-fill').style.width = progress + '%';
+                    document.getElementById('progress-text').textContent = progress + '%';
+
+                    // Check if the progress has reached 100%
+                    if (JSON.parse(progressXhr.responseText) === 100) {
+                        clearInterval(uploadProgressInterval);
+                        setTimeout(function () {
+                            console.log(encodeURI(directory));
+                            window.location.href = '/upload-result?path=' + encodeURI(directory);
+                        }, 500); // Add a small delay before redirecting
+                    }
+                }
+            });
+
+            // Send the request
+            progressXhr.send();
+        }, 100); // Query progress every 1 second (you can adjust this value as needed)
+    });
+
+    function waitForProgressCompletion() {
+        setTimeout(function () {
+            if (progressBar.value !== 100) {
+                waitForProgressCompletion();
+            }
+        }, 1000); // Check progress every 1 second (you can adjust this value as needed)
+    }
+
+    function generateUUID() {
+        // 你可以使用自己的方式生成UUID，这里提供一个简单的示例
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+</script>
+
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Upload Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 0.5em;
+        }
+
+        p {
+            font-size: 1.2em;
+            margin-bottom: 2em;
+        }
+
+        form button {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="hidden" id="directory" th:value="${path}" />
+    <h1 th:text="${message}"></h1>
+    <p id="redirect-message">3秒后自动跳转上个页面...</p> <!-- Add a prompt here -->
+    <form action="/">
+        <button type="submit">返回主页</button>
+    </form>
+</body>
+
+<script>
+    var countdown = 3;
+    var redirectMessageElement = document.getElementById('redirect-message');
+    var directory = document.getElementById('directory').value;
+
+    var intervalId = setInterval(function () {
+        countdown--;
+        if (countdown <= 0) {
+            clearInterval(intervalId);
+            window.location.href = '/?path=' + directory;
+        } else {
+            redirectMessageElement.textContent = countdown + '秒后自动跳转上个页面...';
+        }
+    }, 1000); // Update the redirect message every second
+</script>
+
+</html>
