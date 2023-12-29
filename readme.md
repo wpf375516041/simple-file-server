@@ -26,10 +26,10 @@ $ target/simple-file-server
 upx --best -k target/simple-file-server
 ```
 极限压缩后的文件大小为：25M，可一键运行，无需安装java环境
-![image](https://gitlab.uuzu.com/pfwang/data-ops/-/raw/master/simple-file-server/src/main/resources/static/picture/1.png)
-![image](https://gitlab.uuzu.com/pfwang/data-ops/-/raw/master/simple-file-server/src/main/resources/static/picture/2.png)
+![image](https://raw.githubusercontent.com/wpf375516041/simple-file-server/main/src/main/resources/static/picture/1.png)
+![image](https://raw.githubusercontent.com/wpf375516041/simple-file-server/main/src/main/resources/static/picture/2.png)
 
 ### 软件截图
-![image](https://gitlab.uuzu.com/pfwang/data-ops/-/raw/master/simple-file-server/src/main/resources/static/picture/3.png)
-![image](https://gitlab.uuzu.com/pfwang/data-ops/-/raw/master/simple-file-server/src/main/resources/static/picture/4.png)
-![image](https://gitlab.uuzu.com/pfwang/data-ops/-/raw/master/simple-file-server/src/main/resources/static/picture/5.png)
+![image](https://raw.githubusercontent.com/wpf375516041/simple-file-server/main/src/main/resources/static/picture/3.png)
+![image](https://raw.githubusercontent.com/wpf375516041/simple-file-server/main/src/main/resources/static/picture/4.png)
+![image](https://raw.githubusercontent.com/wpf375516041/simple-file-server/main/src/main/resources/static/picture/5.png)
